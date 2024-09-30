@@ -1,7 +1,9 @@
 #[path = "全形處理/mod.rs"] // non-ASCII 的檔名必須顯式寫出路徑
 mod 全形處理;
-#[path = "分詞器.rs"] // non-ASCII 的檔名必須顯式寫出路徑
+#[path = "分詞器.rs"]
 mod 分詞器;
+#[path = "剖析器.rs"]
+mod 剖析器;
 
 use std::env;
 use std::fs::File;
@@ -26,9 +28,11 @@ fn main() -> io::Result<()> {
 
     // 打印檔案內容
     let 詞列 = 分詞器::Ｏ分詞器::new(音界咒源碼).分詞();
-    for 詞 in 詞列 {
+    for 詞 in &詞列 {
         println!("{:?}", 詞);
     }
+    let 語法樹 = 剖析器::Ｏ剖析器::new(詞列).剖析();
+    println!("{:#?}", 語法樹);
 
     Ok(())
 }

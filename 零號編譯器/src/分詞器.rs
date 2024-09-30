@@ -4,7 +4,7 @@ use std::collections::VecDeque;
 // 漢語無大小寫，本作慣例以全形英文字母Ｏ來當類型的開頭
 // Rust 管制識別符的字元組成，不允許 ◉、⦿、☯︎ 等等萬國碼，故採用常見的全形Ｏ來代替。
 #[derive(Debug)]
-enum Ｏ運算子 {
+pub enum Ｏ運算子 {
     加,
     減,
     乘,
@@ -53,6 +53,21 @@ impl Ｏ分詞器 {
         Ｏ分詞器 {
             字流: 源碼.chars().collect(),
         }
+    }
+
+    pub fn 分詞(mut self) -> VecDeque<Ｏ詞> {
+        let mut 詞列: VecDeque<Ｏ詞> = VecDeque::new();
+        while self.字流.front().is_some() {
+            match self.起點態() {
+                Some(詞) => {
+                    詞列.push_back(詞);
+                }
+                None => {
+                    panic!("分詞錯誤");
+                }
+            }
+        }
+        詞列
     }
 
     fn 起點態(&mut self) -> Option<Ｏ詞> {
@@ -109,20 +124,5 @@ impl Ｏ分詞器 {
             }
             _ => Some(Ｏ詞::變數(前綴)),
         }
-    }
-
-    pub fn 分詞(mut self) -> Vec<Ｏ詞> {
-        let mut 詞列: Vec<Ｏ詞> = Vec::new();
-        while self.字流.front().is_some() {
-            match self.起點態() {
-                Some(詞) => {
-                    詞列.push(詞);
-                }
-                None => {
-                    panic!("分詞錯誤");
-                }
-            }
-        }
-        詞列
     }
 }
