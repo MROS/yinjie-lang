@@ -1,4 +1,4 @@
-use crate::分詞器::{Ｏ分詞器, Ｏ詞, Ｏ運算子};
+use crate::分詞器::{Ｏ詞, Ｏ運算子};
 use std::collections::VecDeque;
 
 pub struct Ｏ剖析器 {
@@ -9,33 +9,33 @@ pub type Ｏ語法樹 = Ｏ咒;
 
 #[derive(Debug)]
 pub struct Ｏ咒 {
-    句: Vec<Ｏ句>,
+    pub 句: Vec<Ｏ句>,
 }
 
 #[derive(Debug)]
-enum Ｏ句 {
+pub enum Ｏ句 {
     變數宣告(Ｏ變數宣告),
     算式(Ｏ算式),
 }
 
 #[derive(Debug)]
-struct Ｏ變數宣告 {
-    變數名: String,
-    算式: Ｏ算式,
+pub struct Ｏ變數宣告 {
+    pub 變數名: String,
+    pub 算式: Ｏ算式,
 }
 
 #[derive(Debug)]
-enum Ｏ算式 {
+pub enum Ｏ算式 {
     變數(String),
     數字(i64),
     二元運算(Ｏ二元運算),
 }
 
 #[derive(Debug)]
-struct Ｏ二元運算 {
-    運算子: Ｏ運算子,
-    左: Box<Ｏ算式>,
-    右: Box<Ｏ算式>,
+pub struct Ｏ二元運算 {
+    pub 運算子: Ｏ運算子,
+    pub 左: Box<Ｏ算式>,
+    pub 右: Box<Ｏ算式>,
 }
 
 impl Ｏ剖析器 {

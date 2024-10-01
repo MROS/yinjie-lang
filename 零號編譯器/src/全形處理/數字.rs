@@ -1,4 +1,4 @@
-pub fn 轉半形(字: char) -> char {
+pub fn _轉半形(字: char) -> char {
     match 字 {
         '０' => '0',
         '１' => '1',

@@ -50,9 +50,10 @@ pub struct Ｏ分詞器 {
 
 impl Ｏ分詞器 {
     pub fn new(源碼: String) -> Self {
-        Ｏ分詞器 {
-            字流: 源碼.chars().collect(),
-        }
+        let mut 字流: VecDeque<char> = 源碼.chars().collect();
+        字流.push_back('\n'); // 檔尾硬加一個換行來方便變數、數字分詞
+
+        Ｏ分詞器 { 字流 }
     }
 
     pub fn 分詞(mut self) -> VecDeque<Ｏ詞> {
@@ -60,6 +61,7 @@ impl Ｏ分詞器 {
         while self.字流.front().is_some() {
             match self.起點態() {
                 Some(詞) => {
+                    println!("{:?}", 詞);
                     詞列.push_back(詞);
                 }
                 None => {
