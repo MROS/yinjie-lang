@@ -1,0 +1,12 @@
+build target:
+	cargo run {{target}}
+	riscv64-unknown-elf-gcc -g -nostdlib {{target}}.S
+
+run target: (build target)
+	qemu-riscv64 a.out
+	echo $?
+
+debug target: (build target)
+	qemu-riscv64 -g 1234 a.out
+	echo $?
+
