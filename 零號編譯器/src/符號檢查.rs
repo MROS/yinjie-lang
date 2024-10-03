@@ -2,12 +2,12 @@ use std::collections::HashSet;
 
 use crate::剖析器::{Ｏ句, Ｏ算式, Ｏ語法樹};
 
-pub fn 檢查語法樹(語法樹: Ｏ語法樹) -> bool {
+pub fn 檢查語法樹(語法樹: &Ｏ語法樹) -> Option<HashSet<String>> {
     let mut 通過 = true;
 
     let mut 變數集 = HashSet::<String>::new();
 
-    for 句 in 語法樹.句 {
+    for 句 in &語法樹.句 {
         通過 = match 句 {
             Ｏ句::變數宣告(宣告) => {
                 let 通過 = 檢查算式(&變數集, &宣告.算式);
@@ -18,7 +18,11 @@ pub fn 檢查語法樹(語法樹: Ｏ語法樹) -> bool {
         } && 通過 // 「通過」寫在 && 後面，避免短路
     }
 
-    通過
+    if 通過 {
+        Some(變數集)
+    } else {
+        None
+    }
 }
 
 fn 檢查算式(變數集: &HashSet<String>, 算式: &Ｏ算式) -> bool {

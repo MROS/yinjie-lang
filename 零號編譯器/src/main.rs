@@ -6,6 +6,8 @@ mod 全形處理;
 mod 分詞器;
 #[path = "剖析器.rs"]
 mod 剖析器;
+#[path = "真言生成器.rs"]
+mod 真言生成器;
 #[path = "符號檢查.rs"]
 mod 符號檢查;
 
@@ -51,12 +53,20 @@ fn main() -> io::Result<()> {
     };
 
     // 檢查符號
-    if 符號檢查::檢查語法樹(語法樹) {
-        println!("符號檢查通過");
-    } else {
-        println!("符號檢查失敗");
-        return Ok(());
-    }
+    let 變數集 = match 符號檢查::檢查語法樹(&語法樹) {
+        Some(變數集) => {
+            println!("符號檢查通過");
+            變數集
+        }
+        None => {
+            println!("符號檢查失敗");
+            return Ok(());
+        }
+    };
+    let 真言檔名 = format!("{}.S", 檔名);
+    let 真言檔 = File::create(真言檔名)?;
+    let mut 生成器 = 真言生成器::Ｏ真言生成器::new(真言檔, 語法樹, 變數集);
+    生成器.生成()?;
 
     Ok(())
 }
