@@ -1,5 +1,5 @@
 use crate::分詞器::Ｏ運算子;
-use crate::剖析器::{Ｏ二元運算, Ｏ句, Ｏ算式, Ｏ語法樹, Ｏ變數宣告};
+use crate::剖析器::{Ｏ句, Ｏ算式, Ｏ語法樹, Ｏ變數宣告};
 use std::{
     collections::HashSet,
     fs::File,
@@ -40,7 +40,7 @@ impl Ｏ真言生成器 {
         for 變數 in &self.變數集 {
             writeln!(self.真言檔, "{}:", 變數)?;
             // 初始值為 0
-            // 其實初始值是多少不重要，通過符號檢查，代表每個變數使用前都會先賦值
+            // 初始值是多少不重要，通過符號檢查，代表每個變數使用前都會先賦值
             writeln!(self.真言檔, "\t.quad 0")?;
         }
         self.換行()
@@ -49,9 +49,14 @@ impl Ｏ真言生成器 {
     // 代碼段
     fn 生成代碼段(&mut self) -> io::Result<()> {
         writeln!(self.真言檔, ".section .text")?;
-        writeln!(self.真言檔, ".global _start")?;
+        // 編譯器會將某些 .data 段的變數存放到 .sdata 段
+        // .sdata 段的數據可以直接用 gp 暫存器的相對位址得到
+        // 會快一個指令，但 gp 初始化需要導引
+        // 因此此處採用 main 而非 _start
+        // gcc 編譯時不加 -nostdlib 參數，讓 gcc 生成 _start 協助引導
+        writeln!(self.真言檔, ".global main")?;
         self.換行()?;
-        writeln!(self.真言檔, "_start:")?;
+        writeln!(self.真言檔, "main:")?;
         let 語法樹 = &self.語法樹;
 
         for 句 in &語法樹.句 {
@@ -70,7 +75,7 @@ impl Ｏ真言生成器 {
     fn 賦值(真言檔: &mut File, 變數宣告: &Ｏ變數宣告) -> io::Result<()> {
         Self::計算(真言檔, &變數宣告.算式)?;
         writeln!(真言檔, "# 賦值給 {}", &變數宣告.變數名)?;
-        writeln!(真言檔, "\tsd t0, {}, s0", &變數宣告.變數名) // 存入變數所在記憶體
+        writeln!(真言檔, "\tsd t0, {}, s1", &變數宣告.變數名) // 存入變數所在記憶體
     }
 
     // 計算結束後，結果置於 t0

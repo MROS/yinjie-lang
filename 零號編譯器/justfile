@@ -1,6 +1,6 @@
 build target:
 	cargo run {{target}}
-	riscv64-unknown-elf-gcc -g -nostdlib {{target}}.S
+	riscv64-unknown-elf-gcc -g {{target}}.S
 
 run target: (build target)
 	qemu-riscv64 a.out
