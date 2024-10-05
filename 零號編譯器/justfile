@@ -1,5 +1,5 @@
 build target:
-	cargo run {{target}}
+	cargo run {{target}} # 加入 -O2 啟用優化
 	riscv64-unknown-elf-gcc -g {{target}}.S
 
 run target: (build target)
@@ -7,6 +7,6 @@ run target: (build target)
 	echo $?
 
 debug target: (build target)
-	qemu-riscv64 -g 1234 a.out
+	qemu-riscv64 -g 1234 a.out # 在 1234 埠口啟動 gdb 伺服器
 	echo $?
 

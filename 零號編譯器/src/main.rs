@@ -10,6 +10,8 @@ mod 剖析器;
 mod 真言生成器;
 #[path = "符號檢查.rs"]
 mod 符號檢查;
+#[path = "通用優化/mod.rs"]
+mod 通用優化;
 
 use std::env;
 use std::fs::File;
@@ -19,11 +21,12 @@ fn main() -> io::Result<()> {
     // 從命令行參數獲取檔案名稱
     let 參數: Vec<String> = env::args().collect();
     if 參數.len() < 2 {
-        eprintln!("用法：音界 源碼.音界");
+        eprintln!("用法：音界 源碼.音界 [-O2]");
         std::process::exit(1);
     }
 
     let 檔名 = &參數[1];
+    let 啟用優化 = 參數.len() == 3 && 參數[2] == "-O2";
 
     // 打開檔案
     let mut 檔案 = File::open(檔名)?;
@@ -41,7 +44,7 @@ fn main() -> io::Result<()> {
     }
 
     // 剖析語法
-    let 語法樹 = match 剖析器::Ｏ剖析器::new(詞列).剖析() {
+    let mut 語法樹 = match 剖析器::Ｏ剖析器::new(詞列).剖析() {
         None => {
             println!("剖析失敗");
             return Ok(());
@@ -63,6 +66,13 @@ fn main() -> io::Result<()> {
             return Ok(());
         }
     };
+
+    // 優化
+    if 啟用優化 {
+        println!("啟用優化");
+        語法樹 = 通用優化::優化(語法樹);
+    }
+
     let 真言檔名 = format!("{}.S", 檔名);
     let 真言檔 = File::create(真言檔名)?;
     let mut 生成器 = 真言生成器::Ｏ真言生成器::new(真言檔, 語法樹, 變數集);
