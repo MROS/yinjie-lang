@@ -127,6 +127,9 @@ impl Ｏ真言生成器 {
             Ｏ運算子::除 => {
                 writeln!(真言檔, "\tdiv t0, t0, t1")?;
             }
+            _ => {
+                unimplemented!()
+            }
         }
 
         writeln!(真言檔, "\tsd t0, 0(sp)") // t0 放入棧頂
