@@ -1,5 +1,5 @@
 use crate::分詞器::Ｏ運算子;
-use crate::剖析器::{Ｏ句, Ｏ算式, Ｏ語法樹, Ｏ變數宣告};
+use crate::剖析::{Ｏ句, Ｏ算式, Ｏ語法樹, Ｏ變數宣告};
 use std::{
     collections::HashSet,
     fs::File,

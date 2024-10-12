@@ -4,8 +4,8 @@
 mod 全形處理;
 #[path = "分詞器.rs"]
 mod 分詞器;
-#[path = "剖析器.rs"]
-mod 剖析器;
+#[path = "剖析/mod.rs"]
+mod 剖析;
 #[path = "真言生成器.rs"]
 mod 真言生成器;
 #[path = "符號檢查.rs"]
@@ -44,7 +44,7 @@ fn main() -> io::Result<()> {
     }
 
     // 剖析語法
-    let mut 語法樹 = match 剖析器::Ｏ剖析器::new(詞列).剖析() {
+    let mut 語法樹 = match 剖析::Ｏ剖析器::new(詞列).剖析() {
         None => {
             println!("剖析失敗");
             return Ok(());

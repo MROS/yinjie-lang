@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use crate::剖析器::{Ｏ句, Ｏ算式, Ｏ語法樹};
+use crate::剖析::{Ｏ句, Ｏ算式, Ｏ語法樹};
 
 pub fn 檢查語法樹(語法樹: &Ｏ語法樹) -> Option<HashSet<String>> {
     let mut 通過 = true;

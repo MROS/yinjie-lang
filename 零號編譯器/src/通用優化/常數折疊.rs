@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::分詞器::Ｏ運算子;
-use crate::剖析器::{Ｏ句, Ｏ算式, Ｏ語法樹};
+use crate::剖析::{Ｏ句, Ｏ算式, Ｏ語法樹};
 
 pub fn 常數折疊(語法樹: Ｏ語法樹) -> Ｏ語法樹 {
     let mut 環境 = HashMap::<String, i64>::new();

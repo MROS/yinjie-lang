@@ -1,4 +1,5 @@
-use crate::分詞器::{Ｏ詞, Ｏ運算子};
+use super::調車場::調車場;
+use crate::分詞器::{Ｏ分詞器, Ｏ詞, Ｏ運算子};
 use std::collections::VecDeque;
 
 pub struct Ｏ剖析器 {
@@ -24,37 +25,18 @@ pub struct Ｏ變數宣告 {
     pub 算式: Ｏ算式,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Ｏ算式 {
     變數(String),
     數字(i64),
     二元運算(Ｏ二元運算),
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Ｏ二元運算 {
     pub 運算子: Ｏ運算子,
     pub 左: Box<Ｏ算式>,
     pub 右: Box<Ｏ算式>,
-}
-
-fn 優先級(運算子: &Ｏ運算子) -> u64 {
-    match 運算子 {
-        Ｏ運算子::乘 => 4,
-        Ｏ運算子::除 => 4,
-
-        Ｏ運算子::餘 => 3,
-
-        Ｏ運算子::加 => 2,
-        Ｏ運算子::減 => 2,
-
-        Ｏ運算子::等於 => 1,
-        Ｏ運算子::異於 => 1,
-        Ｏ運算子::小於 => 1,
-        Ｏ運算子::小於等於 => 1,
-        Ｏ運算子::大於 => 1,
-        Ｏ運算子::大於等於 => 1,
-    }
 }
 
 impl Ｏ剖析器 {
@@ -114,52 +96,17 @@ impl Ｏ剖析器 {
     fn 剖析算式(&self, 游標: usize) -> Option<(Ｏ算式, usize)> {
         let (原子式, mut 游標) = self.剖析原子式(游標)?;
 
-        // TODO: 將算子棧算元棧包裝到一個 struct 裡
-        let mut 算元棧 = VecDeque::<Ｏ算式>::new();
-        算元棧.push_back(原子式);
-
-        let mut 算子棧 = VecDeque::<Ｏ運算子>::new();
+        let mut 調車場 = 調車場::new(原子式);
 
         while let Some((新算子, 新游標)) = self.消耗運算子(游標) {
             let (新算元, 新游標) = self.剖析原子式(新游標)?;
 
-            // 讀取到新算子，進行棧操作
-            while !算子棧.is_empty() && 優先級(算子棧.back().unwrap()) >= 優先級(&新算子)
-            {
-                // 新算子優先級較低，代表棧中的算子算元可以先結合了。
-                let 右算元 = 算元棧.pop_back().unwrap();
-                let 左算元 = 算元棧.pop_back().unwrap();
-                let 運算子 = 算子棧.pop_back().unwrap();
-                算元棧.push_back(Ｏ算式::二元運算(Ｏ二元運算 {
-                    運算子,
-                    左: Box::new(左算元),
-                    右: Box::new(右算元),
-                }));
-            }
-
-            // 原式中能決定結合的算子跟算元都決定了，推入新算子跟算元
-            算子棧.push_back(新算子);
-            算元棧.push_back(新算元);
+            調車場.讀取(新算子, 新算元);
 
             游標 = 新游標
         }
 
-        while !算子棧.is_empty() {
-            // 無新算子，棧中的算子算元最右向左依次結合
-            // TODO: 封裝此二相同 while 內容
-            let 右算元 = 算元棧.pop_back().unwrap();
-            let 左算元 = 算元棧.pop_back().unwrap();
-            let 運算子 = 算子棧.pop_back().unwrap();
-            算元棧.push_back(Ｏ算式::二元運算(Ｏ二元運算 {
-                運算子,
-                左: Box::new(左算元),
-                右: Box::new(右算元),
-            }));
-        }
-
-        assert_eq!(算元棧.len(), 1);
-
-        Some((算元棧.pop_back().unwrap(), 游標))
+        Some((調車場.結束(), 游標))
     }
 
     fn 剖析原子式(&self, 游標: usize) -> Option<(Ｏ算式, usize)> {
@@ -217,5 +164,69 @@ impl Ｏ剖析器 {
             }
             None => None,
         }
+    }
+}
+
+#[cfg(test)]
+mod 測試 {
+    use super::*;
+    fn 源碼剖析器(源碼: &'static str) -> Ｏ剖析器 {
+        let 詞組 = Ｏ分詞器::new(源碼.to_owned()).分詞();
+        Ｏ剖析器::new(詞組)
+    }
+
+    #[test]
+    fn 測試運算子優先級() {
+        let 剖析器 = 源碼剖析器("１＝＝５－３％２＊４－１");
+        let (算式, _) = 剖析器.剖析算式(0).unwrap();
+        use Ｏ算式::*;
+        use Ｏ運算子::*;
+        assert_eq!(
+            算式,
+            二元運算(Ｏ二元運算 {
+                運算子: 等於,
+                左: Box::new(數字(1)),
+                右: Box::new(二元運算(Ｏ二元運算 {
+                    運算子: 減,
+                    左: Box::new(二元運算(Ｏ二元運算 {
+                        運算子: 減,
+                        左: Box::new(數字(5)),
+                        右: Box::new(二元運算(Ｏ二元運算 {
+                            運算子: 餘,
+                            左: Box::new(數字(3)),
+                            右: Box::new(二元運算(Ｏ二元運算 {
+                                運算子: 乘,
+                                左: Box::new(數字(2)),
+                                右: Box::new(數字(4)),
+                            })),
+                        }))
+                    })),
+                    右: Box::new(數字(1)),
+                }))
+            })
+        )
+    }
+    #[test]
+    fn 測試括號優先級() {
+        let 剖析器 = 源碼剖析器("（（１＝＝５）－３）％２");
+        let (算式, _) = 剖析器.剖析算式(0).unwrap();
+        use Ｏ算式::*;
+        use Ｏ運算子::*;
+        assert_eq!(
+            算式,
+            二元運算(Ｏ二元運算 {
+                運算子: 餘,
+                左: Box::new(二元運算(Ｏ二元運算 {
+                    運算子: 減,
+                    左: Box::new(二元運算(Ｏ二元運算 {
+                        運算子: 等於,
+                        左: Box::new(數字(1)),
+                        右: Box::new(數字(5))
+                    })),
+                    右: Box::new(數字(3))
+                })),
+                右: Box::new(數字(2))
+            })
+        )
     }
 }
