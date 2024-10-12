@@ -1,4 +1,4 @@
-use super::調車場::調車場;
+use super::調車場::Ｏ調車場;
 use crate::分詞器::{Ｏ分詞器, Ｏ詞, Ｏ運算子};
 use std::collections::VecDeque;
 
@@ -19,7 +19,7 @@ pub enum Ｏ句 {
     算式(Ｏ算式),
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Ｏ變數宣告 {
     pub 變數名: String,
     pub 算式: Ｏ算式,
@@ -96,7 +96,7 @@ impl Ｏ剖析器 {
     fn 剖析算式(&self, 游標: usize) -> Option<(Ｏ算式, usize)> {
         let (原子式, mut 游標) = self.剖析原子式(游標)?;
 
-        let mut 調車場 = 調車場::new(原子式);
+        let mut 調車場 = Ｏ調車場::new(原子式);
 
         while let Some((新算子, 新游標)) = self.消耗運算子(游標) {
             let (新算元, 新游標) = self.剖析原子式(新游標)?;
@@ -227,6 +227,19 @@ mod 測試 {
                 })),
                 右: Box::new(數字(2))
             })
+        )
+    }
+    #[test]
+    fn 測試變數宣告() {
+        let 剖析器 = 源碼剖析器("元．甲＝１");
+        let (變數宣告, _) = 剖析器.剖析變數宣告(0).unwrap();
+        use Ｏ算式::*;
+        assert_eq!(
+            變數宣告,
+            Ｏ變數宣告 {
+                變數名: "甲".to_owned(),
+                算式: 數字(1),
+            }
         )
     }
 }

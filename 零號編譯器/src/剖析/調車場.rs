@@ -21,12 +21,12 @@ fn 優先級(運算子: &Ｏ運算子) -> u64 {
     }
 }
 
-pub struct 調車場 {
+pub struct Ｏ調車場 {
     算元棧: VecDeque<Ｏ算式>,
     算子棧: VecDeque<Ｏ運算子>,
 }
 
-impl 調車場 {
+impl Ｏ調車場 {
     pub fn new(首個算元: Ｏ算式) -> Self {
         Self {
             算元棧: vec![首個算元].into(),
