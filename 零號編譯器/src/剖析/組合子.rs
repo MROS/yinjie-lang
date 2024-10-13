@@ -19,6 +19,11 @@ pub trait 組合子<'a, T, U> {
     where
         F: Fn(&'a [Ｏ詞]) -> Option<(U, &'a [Ｏ詞])>;
 
+    //  0 ~ 1 次
+    fn 可選<F>(self, f: F) -> Option<((T, Option<U>), &'a [Ｏ詞])>
+    where
+        F: Fn(&'a [Ｏ詞]) -> Option<(U, &'a [Ｏ詞])>;
+
     fn 映射<F>(self, f: F) -> Option<(U, &'a [Ｏ詞])>
     where
         F: FnOnce(T) -> U;
@@ -58,6 +63,19 @@ impl<'a, T, U> 組合子<'a, T, U> for Option<(T, &'a [Ｏ詞])> {
             }
             None => None,
         }
+    }
+
+    fn 可選<F>(self, f: F) -> Option<((T, Option<U>), &'a [Ｏ詞])>
+    where
+        F: Fn(&'a [Ｏ詞]) -> Option<(U, &'a [Ｏ詞])>,
+    {
+        self.and_then(|(剖析結果, 游標)| {
+            // 將之前的剖析結果與新剖析結果以 tuple 包裝
+            match f(游標) {
+                Some((新剖析結果, 游標)) => Some(((剖析結果, Some(新剖析結果)), 游標)),
+                None => Some(((剖析結果, None), 游標)),
+            }
+        })
     }
 
     fn 映射<F>(self, f: F) -> Option<(U, &'a [Ｏ詞])>

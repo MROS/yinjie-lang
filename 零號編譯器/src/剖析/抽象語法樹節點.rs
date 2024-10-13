@@ -38,6 +38,25 @@ pub enum Ｏ算式 {
 #[derive(Debug, PartialEq, From)]
 pub struct Ｏ歸(pub Ｏ算式);
 
+#[derive(Debug, PartialEq, From)]
+pub struct Ｏ若 {
+    pub 條件: Ｏ算式,
+    pub 區塊: Vec<Ｏ句>,
+    pub 或若列表: Vec<Ｏ或若>,
+    pub 不然: Option<Ｏ不然>,
+}
+
+#[derive(Debug, PartialEq, From)]
+pub struct Ｏ或若 {
+    pub 條件: Ｏ算式,
+    pub 區塊: Vec<Ｏ句>,
+}
+
+#[derive(Debug, PartialEq, From)]
+pub struct Ｏ不然 {
+    pub 區塊: Vec<Ｏ句>,
+}
+
 #[derive(Debug, PartialEq)]
 pub struct Ｏ術宣告 {
     pub 術名: String,
