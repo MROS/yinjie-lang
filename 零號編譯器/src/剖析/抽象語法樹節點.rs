@@ -37,6 +37,21 @@ pub enum Ｏ算式 {
     數字(i64),
     二元運算(Ｏ二元運算),
 }
+impl Into<Ｏ算式> for String {
+    fn into(self) -> Ｏ算式 {
+        Ｏ算式::變數(self)
+    }
+}
+impl Into<Ｏ算式> for i64 {
+    fn into(self) -> Ｏ算式 {
+        Ｏ算式::數字(self)
+    }
+}
+impl Into<Ｏ算式> for Ｏ二元運算 {
+    fn into(self) -> Ｏ算式 {
+        Ｏ算式::二元運算(self)
+    }
+}
 
 #[derive(Debug, PartialEq)]
 pub struct Ｏ二元運算 {
