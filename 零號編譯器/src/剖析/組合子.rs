@@ -28,3 +28,19 @@ impl<'a, T, U> 組合子<'a, T, U> for Option<(T, &'a [Ｏ詞])> {
         self.map(|(剖析結果, 游標)| (f(剖析結果), 游標))
     }
 }
+
+pub trait 自動映射組合子<'a, T, U>
+where
+    T: Into<U>,
+{
+    fn 自動映射(self) -> Option<(U, &'a [Ｏ詞])>;
+}
+
+impl<'a, T, U> 自動映射組合子<'a, T, U> for Option<(T, &'a [Ｏ詞])>
+where
+    T: Into<U>,
+{
+    fn 自動映射(self) -> Option<(U, &'a [Ｏ詞])> {
+        self.map(|(剖析結果, 游標)| (剖析結果.into(), 游標))
+    }
+}
