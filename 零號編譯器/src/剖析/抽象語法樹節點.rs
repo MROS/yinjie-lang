@@ -19,6 +19,7 @@ pub enum Ｏ句 {
     變數宣告(Ｏ變數宣告),
     算式(Ｏ算式),
     歸(Ｏ歸),
+    若(Ｏ若),
 }
 
 #[derive(Debug, PartialEq)]
