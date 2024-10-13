@@ -1,3 +1,4 @@
+use super::組合子::組合子;
 use super::調車場::Ｏ調車場;
 use crate::分詞器::{Ｏ分詞器, Ｏ詞, Ｏ運算子};
 use std::collections::VecDeque;
@@ -49,46 +50,38 @@ impl Ｏ剖析器 {
     }
 
     fn 剖析咒(&mut self, 游標: usize) -> Option<(Ｏ咒, usize)> {
-        println!("剖析咒 {}", 游標);
         let mut 咒 = Ｏ咒 { 句: Vec::new() };
         let mut 游標 = 游標;
 
         while self.詞組.len() > 游標 {
             let (句, 新游標) = self.剖析句(游標)?;
+
             游標 = 新游標;
+            while let Some((_, 新游標)) = self.消耗(Ｏ詞::換行, 游標) {
+                游標 = 新游標;
+            }
+
             咒.句.push(句);
         }
         Some((咒, 游標))
     }
 
     fn 剖析句(&self, 游標: usize) -> Option<(Ｏ句, usize)> {
-        println!("剖析句 {}", 游標);
-        if let Some((變數宣告, mut 游標)) = self.剖析變數宣告(游標) {
-            // 忽略換行
-            while let Some(新游標) = self.消耗(游標, Ｏ詞::換行) {
-                游標 = 新游標;
-            }
-
-            return Some((Ｏ句::變數宣告(變數宣告), 游標));
-        }
-        if let Some((算式, mut 游標)) = self.剖析算式(游標) {
-            // 忽略換行
-            while let Some(新游標) = self.消耗(游標, Ｏ詞::換行) {
-                游標 = 新游標;
-            }
-
-            return Some((Ｏ句::算式(算式), 游標));
-        }
-
-        None
+        self.剖析變數宣告(游標)
+            .map(|(變數宣告, 游標)| (Ｏ句::變數宣告(變數宣告), 游標))
+            .or_else(|| {
+                self.剖析算式(游標)
+                    .map(|(算式, 游標)| (Ｏ句::算式(算式), 游標))
+            })
     }
 
     fn 剖析變數宣告(&self, 游標: usize) -> Option<(Ｏ變數宣告, usize)> {
-        let 游標 = self.消耗(游標, Ｏ詞::元)?;
-        let 游標 = self.消耗(游標, Ｏ詞::音界)?;
-        let (變數名, 游標) = self.剖析變數(游標)?;
-        let 游標 = self.消耗(游標, Ｏ詞::賦值)?;
-        let (算式, 游標) = self.剖析算式(游標)?;
+        let ((((_, 變數名), _), 算式), 游標) = self
+            .消耗元(游標)
+            .且(|i| self.消耗音界(i))
+            .且(|i| self.剖析變數(i))
+            .且(|i| self.消耗賦值(i))
+            .且(|i| self.剖析算式(i))?;
 
         Some((Ｏ變數宣告 { 算式, 變數名 }, 游標))
     }
@@ -120,9 +113,9 @@ impl Ｏ剖析器 {
         }
         // 原子式 = （算式）
         if let Some(結果) = (|| -> Option<(Ｏ算式, usize)> {
-            let 游標 = self.消耗(游標, Ｏ詞::左圓括號)?;
+            let (_, 游標) = self.消耗(Ｏ詞::左圓括號, 游標)?;
             let (算式, 游標) = self.剖析算式(游標)?;
-            let 游標 = self.消耗(游標, Ｏ詞::右圓括號)?;
+            let (_, 游標) = self.消耗(Ｏ詞::右圓括號, 游標)?;
             Some((算式, 游標))
         })() {
             return Some(結果);
@@ -153,11 +146,21 @@ impl Ｏ剖析器 {
         }
     }
 
-    fn 消耗(&self, 游標: usize, 詞: Ｏ詞) -> Option<usize> {
+    fn 消耗元(&self, 游標: usize) -> Option<((), usize)> {
+        self.消耗(Ｏ詞::元, 游標)
+    }
+    fn 消耗音界(&self, 游標: usize) -> Option<((), usize)> {
+        self.消耗(Ｏ詞::音界, 游標)
+    }
+    fn 消耗賦值(&self, 游標: usize) -> Option<((), usize)> {
+        self.消耗(Ｏ詞::賦值, 游標)
+    }
+
+    fn 消耗(&self, 詞: Ｏ詞, 游標: usize) -> Option<((), usize)> {
         match self.詞組.get(游標) {
             Some(當前詞) => {
                 if 當前詞 == &詞 {
-                    Some(游標 + 1)
+                    Some(((), 游標 + 1))
                 } else {
                     None
                 }
