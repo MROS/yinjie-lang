@@ -82,13 +82,13 @@ impl Ｏ分詞器 {
         Ｏ分詞器 { 字流 }
     }
 
-    pub fn 分詞(mut self) -> VecDeque<Ｏ詞> {
-        let mut 詞列: VecDeque<Ｏ詞> = VecDeque::new();
+    pub fn 分詞(mut self) -> Vec<Ｏ詞> {
+        let mut 詞列: Vec<Ｏ詞> = Vec::new();
         while self.字流.front().is_some() {
             match self.起點態() {
                 Some(詞) => {
                     // println!("{:?}", 詞);
-                    詞列.push_back(詞);
+                    詞列.push(詞);
                 }
                 None => {
                     panic!("分詞錯誤");
