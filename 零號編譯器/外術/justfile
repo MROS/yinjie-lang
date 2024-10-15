@@ -1,0 +1,6 @@
+build:
+		riscv64-unknown-elf-gcc -c 曰.c -o 曰.o
+		riscv64-unknown-elf-objcopy --redefine-sym print_int=曰 曰.o
+
+clean:
+		rm *.o

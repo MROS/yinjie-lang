@@ -1,3 +1,5 @@
+# 本文件僅為測試用途
+# 用以測試「曰.o」中外術鏈結
     .section .text
     .global 甲
     .global 乙
@@ -104,9 +106,9 @@ main:
     # 彈出計算結果後 sp 又回到術開始時的原本位置，棧大小恢復如初
 	addi sp, sp, 8
 
-    # 準備參數，施展外術 print_int
+    # 準備參數，施展外術「曰」
     mv a0, t1
-    call print_int
+    call 曰
 
     # 收尾
     ld ra, -8(s0)        # 恢復返回位址給暫存器 ra

@@ -1,3 +1,7 @@
+# 編譯外術
+pre-build:
+	just 外術/build
+
 build target:
 	cargo run {{target}} # 加入 -O2 啟用優化
 	riscv64-unknown-elf-gcc -g {{target}}.S
