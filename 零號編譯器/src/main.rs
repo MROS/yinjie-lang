@@ -6,6 +6,8 @@ mod 全形處理;
 mod 分詞器;
 #[path = "剖析/mod.rs"]
 mod 剖析;
+#[path = "外術列表.rs"]
+mod 外術列表;
 #[path = "真言生成/mod.rs"]
 mod 真言生成;
 #[path = "符號檢查.rs"]

@@ -95,7 +95,10 @@ impl Ｏ分詞器 {
                 }
             }
         }
-        詞列.into_iter().filter(|詞| *詞 != Ｏ詞::空白).collect()
+        詞列
+            .into_iter()
+            .filter(|詞| *詞 != Ｏ詞::空白 && *詞 != Ｏ詞::換行)
+            .collect()
     }
 
     fn 起點態(&mut self) -> Option<Ｏ詞> {
