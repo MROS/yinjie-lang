@@ -1,5 +1,4 @@
 use rpds::HashTrieMap;
-use std::collections::HashSet;
 
 use crate::分詞器::Ｏ運算子;
 use crate::剖析::抽象語法樹節點::*;
@@ -14,7 +13,7 @@ enum Ｏ類型 {
 
 type Ｏ環境 = HashTrieMap<String, Ｏ類型>;
 
-pub fn 檢查語法樹(語法樹: &Ｏ語法樹) -> Option<HashSet<String>> {
+pub fn 檢查語法樹(語法樹: &Ｏ語法樹) -> bool {
     let mut 全部通過 = true;
 
     let mut 環境 = Ｏ環境::new();
@@ -28,13 +27,7 @@ pub fn 檢查語法樹(語法樹: &Ｏ語法樹) -> Option<HashSet<String>> {
         全部通過 = 全部通過 && 通過;
     }
 
-    if 全部通過 {
-        // TODO: 更改真言生成器接受的環境類型
-        // Some(環境)
-        Some(HashSet::new())
-    } else {
-        None
-    }
+    全部通過
 }
 
 // 會增加定義（改變環境）的語法結構需要返回環境
@@ -221,7 +214,7 @@ mod tests {
         let 檢查結果 = 檢查語法樹(&語法樹);
 
         // 檢查結果
-        assert!(檢查結果.is_some()); // 應該通過
+        assert!(檢查結果); // 應該通過
     }
 
     #[test]
@@ -256,7 +249,7 @@ mod tests {
         let 檢查結果 = 檢查語法樹(&語法樹);
 
         // 檢查結果
-        assert!(檢查結果.is_none()); // 應該失敗
+        assert!(!檢查結果); // 應該失敗
     }
 
     #[test]
