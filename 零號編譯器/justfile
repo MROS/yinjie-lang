@@ -8,9 +8,10 @@ build target:
 
 run target: (build target)
 	qemu-riscv64 a.out
-	echo $?
 
 debug target: (build target)
 	qemu-riscv64 -g 1234 a.out # 在 1234 埠口啟動 gdb 伺服器
-	echo $?
+
+test:
+    ./腳本/整合測試.sh
 

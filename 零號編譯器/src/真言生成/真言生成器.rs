@@ -230,6 +230,14 @@ impl Ｏ真言生成器 {
         }
     }
 
+    fn 術收尾(&mut self) -> io::Result<()> {
+        writeln!(self.真言檔, "# 收尾")?;
+        writeln!(self.真言檔, "\tld ra, -8(s0)")?; // 計算結果放進 a0 ，結束術
+        writeln!(self.真言檔, "\tmv sp, s0")?; // 歸還棧空間
+        writeln!(self.真言檔, "\tld s0, -16(s0)")?; // 恢復 fp
+        writeln!(self.真言檔, "\tret")
+    }
+
     fn 生成術(&mut self, 術: &Ｏ術宣告, 符號表: Ｏ符號表) -> io::Result<()> {
         self.術開頭(術)?;
 
@@ -385,58 +393,60 @@ impl Ｏ真言生成器 {
         writeln!(self.真言檔, "\tmv a0, t0")?; // 計算結果放進 a0 ，結束術
         self.術收尾()
     }
-    fn 分支標籤名(&self) -> String {
+    fn 新分支標籤名(&mut self) -> String {
+        self.分支標籤計數 += 1;
         format!("分支標籤——{}", self.分支標籤計數)
     }
-    fn 寫入分支標籤(&mut self) -> io::Result<()> {
-        writeln!(self.真言檔, "{}:", self.分支標籤名())?;
-        self.分支標籤計數 += 1;
-        Ok(())
+    fn 上標籤(&mut self, 標籤名: &String) -> io::Result<()> {
+        writeln!(self.真言檔, "{}:", 標籤名)
     }
-    fn t0為0則跳至下個分支標籤(&mut self) -> io::Result<()> {
-        writeln!(self.真言檔, "\tbeq t0, x0, {}", self.分支標籤名())
+    fn t0為0則跳至標籤(&mut self, 標籤名: &String) -> io::Result<()> {
+        writeln!(self.真言檔, "\tbeq t0, x0, {}", 標籤名)
     }
-    fn 區塊群結尾標籤名(&self) -> String {
+    fn 新區塊群結尾標籤名(&mut self) -> String {
+        self.區塊群結尾標籤計數 += 1;
         format!("區塊群結尾標籤——{}", self.區塊群結尾標籤計數)
     }
-    fn 寫入區塊群結尾標籤(&mut self) -> io::Result<()> {
-        writeln!(self.真言檔, "{}:", self.區塊群結尾標籤名())?;
-        self.區塊群結尾標籤計數 += 1;
-        Ok(())
-    }
-    fn 跳至區塊群結尾(&mut self) -> io::Result<()> {
-        writeln!(self.真言檔, "j {}", self.區塊群結尾標籤名())
+    fn 跳至標籤(&mut self, 標籤名: &String) -> io::Result<()> {
+        writeln!(self.真言檔, "j {}", 標籤名)
     }
     fn 生成若(&mut self, 若: &Ｏ若, 符號表: &Ｏ符號表) -> io::Result<()> {
         // 若
         self.計算(&若.條件, 符號表)?;
         self.彈出()?;
-        self.t0為0則跳至下個分支標籤()?;
+        let mut 分支標籤名 = self.新分支標籤名();
+        self.t0為0則跳至標籤(&分支標籤名)?;
         // 區塊內的新增區域變數，在區塊外不應被擷取
         // 故需複製符號表，以免原符號表被影響
         self.生成區塊(&若.區塊, 符號表.clone())?;
-        writeln!(self.真言檔, "\t")?;
-        if 若.或若列表.len() > 0 || 若.不然.is_some() {
-            self.跳至區塊群結尾()?;
+
+        if 若.或若列表.len() == 0 && 若.不然.is_none() {
+            // 僅有若，無或若、不然。
+            self.上標籤(&分支標籤名)?;
+            return Ok(());
         }
+
+        let 區塊群結尾標籤名 = self.新區塊群結尾標籤名();
+        self.跳至標籤(&區塊群結尾標籤名)?;
 
         // 或若
         for 或若 in &若.或若列表 {
-            self.寫入分支標籤()?;
+            self.上標籤(&分支標籤名)?;
             self.計算(&或若.條件, 符號表)?;
             self.彈出()?;
-            self.t0為0則跳至下個分支標籤()?;
+            分支標籤名 = self.新分支標籤名();
+            self.t0為0則跳至標籤(&分支標籤名)?;
             self.生成區塊(&或若.區塊, 符號表.clone())?;
-            self.跳至區塊群結尾()?;
+            self.跳至標籤(&區塊群結尾標籤名)?;
         }
 
         // 不然
-        self.寫入分支標籤()?;
+        self.上標籤(&分支標籤名)?;
         if let Some(不然) = &若.不然 {
             self.生成區塊(&不然.區塊, 符號表.clone())?;
         }
 
-        self.寫入區塊群結尾標籤()
+        self.上標籤(&區塊群結尾標籤名)
     }
     fn 生成區塊(
         &mut self, 區塊: &Vec<Ｏ句>, mut 符號表: Ｏ符號表
@@ -445,12 +455,5 @@ impl Ｏ真言生成器 {
             self.生成句(句, &mut 符號表)?;
         }
         Ok(())
-    }
-    fn 術收尾(&mut self) -> io::Result<()> {
-        writeln!(self.真言檔, "# 收尾")?;
-        writeln!(self.真言檔, "\tld ra, -8(s0)")?; // 計算結果放進 a0 ，結束術
-        writeln!(self.真言檔, "\tmv sp, s0")?; // 歸還棧空間
-        writeln!(self.真言檔, "\tld s0, -16(s0)")?; // 恢復 fp
-        writeln!(self.真言檔, "\tret")
     }
 }
