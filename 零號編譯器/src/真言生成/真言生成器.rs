@@ -94,36 +94,41 @@ impl Ｏ符號表 {
 
 pub struct Ｏ真言生成器 {
     真言檔: File,
-    語法樹: Ｏ語法樹,
+    分支標籤計數: u64,
 }
 
 impl Ｏ真言生成器 {
-    pub fn new(真言檔: File, 語法樹: Ｏ語法樹) -> Self {
+    pub fn new(真言檔: File) -> Self {
         Ｏ真言生成器 {
-            真言檔, 語法樹
+            真言檔,
+            分支標籤計數: 0,
         }
     }
 
-    pub fn 生成(&mut self) -> io::Result<()> {
-        let 符號表 = self.生成數據段()?;
-        self.生成代碼段(符號表)
+    pub fn 生成(&mut self, 語法樹: Ｏ語法樹) -> io::Result<()> {
+        let 符號表 = self.生成數據段(&語法樹)?;
+        self.生成代碼段(&語法樹, 符號表)
     }
 
     /// 好用函式
     fn 換行(&mut self) -> io::Result<()> {
         writeln!(self.真言檔, "")
     }
+    fn 生成分支標籤(&mut self) -> io::Result<()> {
+        self.分支標籤計數 += 1;
+        writeln!(self.真言檔, "分支標籤——{}", self.分支標籤計數)
+    }
 
     /// 數據段
-    fn 生成數據段(&mut self) -> io::Result<Ｏ符號表> {
+    fn 生成數據段(&mut self, 語法樹: &Ｏ語法樹) -> io::Result<Ｏ符號表> {
         writeln!(self.真言檔, ".section .data")?;
-        self.生成全域變數標籤()
+        self.生成全域變數標籤(語法樹)
     }
     // 順便回傳全域變數表給代碼段使用
-    fn 生成全域變數標籤(&mut self) -> io::Result<Ｏ符號表> {
+    fn 生成全域變數標籤(&mut self, 語法樹: &Ｏ語法樹) -> io::Result<Ｏ符號表> {
         let mut 符號表 = Ｏ符號表::new();
 
-        for 頂層宣告 in &self.語法樹.頂層宣告 {
+        for 頂層宣告 in &語法樹.頂層宣告 {
             match 頂層宣告 {
                 Ｏ頂層宣告::變數宣告(變數宣告) => {
                     // 將全域變數錄入符號表
@@ -149,16 +154,16 @@ impl Ｏ真言生成器 {
     }
 
     /// 代碼段
-    fn 生成代碼段(&mut self, 符號表: Ｏ符號表) -> io::Result<()> {
+    fn 生成代碼段(
+        &mut self, 語法樹: &Ｏ語法樹, 符號表: Ｏ符號表
+    ) -> io::Result<()> {
         writeln!(self.真言檔, ".section .text")?;
         self.生成main()?;
-
-        let 語法樹 = &self.語法樹;
 
         for 頂層宣告 in &語法樹.頂層宣告 {
             match 頂層宣告 {
                 Ｏ頂層宣告::術宣告(術) => {
-                    Self::生成術(&mut self.真言檔, 術, 符號表.clone())?;
+                    self.生成術(術, 符號表.clone())?;
                 }
                 _ => {}
             }
@@ -184,34 +189,32 @@ impl Ｏ真言生成器 {
         Ok(())
     }
 
-    fn 術開頭(真言檔: &mut File, 術: &Ｏ術宣告) -> io::Result<()> {
-        writeln!(真言檔, "\n")?;
-        writeln!(真言檔, "{}:", 術.術名)?;
+    fn 術開頭(&mut self, 術: &Ｏ術宣告) -> io::Result<()> {
+        writeln!(self.真言檔, "\n")?;
+        writeln!(self.真言檔, "{}:", 術.術名)?;
 
         let 區域變數數量 = 術內區域變數數量(&術);
 
         let 棧初始大小 = (術.形參.len() + 區域變數數量 + 2) * 字長;
-        writeln!(真言檔, "\t# 區域變數數量 = {}", 區域變數數量)?;
-        writeln!(真言檔, "\t# 參數數量 = {}", 術.形參.len())?;
+        writeln!(self.真言檔, "\t# 區域變數數量 = {}", 區域變數數量)?;
+        writeln!(self.真言檔, "\t# 參數數量 = {}", 術.形參.len())?;
         writeln!(
-            真言檔,
+            self.真言檔,
             "\t# 棧大小 = (參數數量 + 區域變數數量 + 2) * 字長({}) = {}",
             字長, 棧初始大小
         )?;
         // 增長棧
-        writeln!(真言檔, "\taddi sp, sp, -{}", 棧初始大小)?;
+        writeln!(self.真言檔, "\taddi sp, sp, -{}", 棧初始大小)?;
         // 儲存返回地址
-        writeln!(真言檔, "\tsd ra, {}(sp)", 棧初始大小 - 字長)?;
+        writeln!(self.真言檔, "\tsd ra, {}(sp)", 棧初始大小 - 字長)?;
         // 儲存舊棧底（fp）
-        writeln!(真言檔, "\tsd s0, {}(sp)", 棧初始大小 - 字長 * 2)?;
+        writeln!(self.真言檔, "\tsd s0, {}(sp)", 棧初始大小 - 字長 * 2)?;
         // 更新 s0 為現在的棧底（s0 就是 fp）
-        writeln!(真言檔, "\taddi s0, sp, {}", 棧初始大小)
+        writeln!(self.真言檔, "\taddi s0, sp, {}", 棧初始大小)
     }
 
-    fn 生成術(
-        真言檔: &mut File, 術: &Ｏ術宣告, 符號表: Ｏ符號表
-    ) -> io::Result<()> {
-        Self::術開頭(真言檔, 術)?;
+    fn 生成術(&mut self, 術: &Ｏ術宣告, 符號表: Ｏ符號表) -> io::Result<()> {
+        self.術開頭(術)?;
 
         let mut 符號表 = 符號表;
         // 將術的參數加入符號表
@@ -220,140 +223,139 @@ impl Ｏ真言生成器 {
             符號表.錄入棧中變數(參名, 實參);
             符號表
                 .取得變數位址(參名)
-                .寫出(真言檔, &format!("a{}", 編號), 參名)?;
+                .寫出(&mut self.真言檔, &format!("a{}", 編號), 參名)?;
         }
 
         for 句 in &術.術體 {
             match 句 {
                 Ｏ句::變數宣告(變數宣告) => {
-                    Self::賦值(真言檔, 變數宣告, &mut 符號表)?;
+                    self.賦值(變數宣告, &mut 符號表)?;
                 }
                 // 算式可能含有副作用，如「曰」會打印數字
                 // 不可為了優化直接省略掉
                 Ｏ句::算式(算式) => {
-                    Self::計算(真言檔, 算式, &符號表)?;
-                    writeln!(真言檔, "\taddi sp, sp, 8")?; // 將計算結果彈出
+                    self.計算(算式, &符號表)?;
+                    writeln!(self.真言檔, "\taddi sp, sp, 8")?; // 將計算結果彈出
                 }
                 Ｏ句::歸(歸) => {
-                    Self::歸(真言檔, &歸.0, &符號表)?;
+                    self.歸(&歸.0, &符號表)?;
                 }
                 Ｏ句::若(若) => {
                     unimplemented!()
+                    // self.生成若(&若, &符號表)?;
                 }
             }
         }
 
-        writeln!(真言檔, "# 結束")?;
+        writeln!(self.真言檔, "# 結束")?;
 
         // TODO: 若最後一句本就是歸語句，就不必再收尾一次了
-        Self::術收尾(真言檔)
+        self.術收尾()
     }
 
     fn 賦值(
-        真言檔: &mut File, 變數宣告: &Ｏ變數宣告, 符號表: &mut Ｏ符號表
+        &mut self, 變數宣告: &Ｏ變數宣告, 符號表: &mut Ｏ符號表
     ) -> io::Result<()> {
         符號表.錄入棧中變數(&變數宣告.變數名, 區域變數);
 
-        Self::計算(真言檔, &變數宣告.算式, 符號表)?;
-        writeln!(真言檔, "\taddi sp, sp, 8")?; // 將計算結果彈出
+        self.計算(&變數宣告.算式, 符號表)?;
+        writeln!(self.真言檔, "\taddi sp, sp, 8")?; // 將計算結果彈出
 
         符號表
             .取得變數位址(&變數宣告.變數名)
-            .寫出(真言檔, "t0", &變數宣告.變數名)
+            .寫出(&mut self.真言檔, "t0", &變數宣告.變數名)
     }
 
     // 計算結束時，棧頂 = t0 = 計算結果
-    fn 計算(
-        真言檔: &mut File, 算式: &Ｏ算式, 符號表: &Ｏ符號表
-    ) -> io::Result<()> {
+    fn 計算(&mut self, 算式: &Ｏ算式, 符號表: &Ｏ符號表) -> io::Result<()> {
         match 算式 {
             Ｏ算式::二元運算(二元運算) => {
-                Self::計算(真言檔, 二元運算.左.as_ref(), 符號表)?;
-                Self::計算(真言檔, 二元運算.右.as_ref(), 符號表)?;
-                Self::二元運算(真言檔, &二元運算.運算子)
+                self.計算(二元運算.左.as_ref(), 符號表)?;
+                self.計算(二元運算.右.as_ref(), 符號表)?;
+                self.二元運算(&二元運算.運算子)
             }
-            Ｏ算式::數字(數) => Self::數字入棧(真言檔, 數),
-            Ｏ算式::變數(變數) => Self::變數入棧(真言檔, 變數, 符號表),
-            Ｏ算式::施術(施術) => Self::施術(真言檔, 施術, 符號表),
+            Ｏ算式::數字(數) => self.數字入棧(數),
+            Ｏ算式::變數(變數) => self.變數入棧(變數, 符號表),
+            Ｏ算式::施術(施術) => self.施術(施術, 符號表),
         }
     }
     // 結束時，棧頂 = t0 = 數
-    fn 數字入棧(真言檔: &mut File, 數: &i64) -> io::Result<()> {
-        writeln!(真言檔, "# {} 入棧", 數)?;
+    fn 數字入棧(&mut self, 數: &i64) -> io::Result<()> {
+        writeln!(self.真言檔, "# {} 入棧", 數)?;
 
-        writeln!(真言檔, "\taddi sp, sp, -8")?; // 增加棧 64 位元的空間
-        writeln!(真言檔, "\tli t0, {}", 數)?; // 將 t0 設為「數」
-        writeln!(真言檔, "\tsd t0, 0(sp)") // t0 放入棧頂
+        writeln!(self.真言檔, "\taddi sp, sp, -8")?; // 增加棧 64 位元的空間
+        writeln!(self.真言檔, "\tli t0, {}", 數)?; // 將 t0 設為「數」
+        writeln!(self.真言檔, "\tsd t0, 0(sp)") // t0 放入棧頂
     }
     // 結束時，棧頂 = t0 = 變數
-    fn 變數入棧(
-        真言檔: &mut File, 變數名: &String, 符號表: &Ｏ符號表
-    ) -> io::Result<()> {
-        writeln!(真言檔, "# 變數「{}」入棧", 變數名)?;
+    fn 變數入棧(&mut self, 變數名: &String, 符號表: &Ｏ符號表) -> io::Result<()> {
+        writeln!(self.真言檔, "# 變數「{}」入棧", 變數名)?;
 
-        writeln!(真言檔, "\taddi sp, sp, -8")?; // 增加棧 64 位元的空間
-        符號表.取得變數位址(變數名).載入(真言檔, "t0", 變數名)?;
-        writeln!(真言檔, "\tsd t0, 0(sp)") // t0 放入棧頂
+        writeln!(self.真言檔, "\taddi sp, sp, -8")?; // 增加棧 64 位元的空間
+        符號表
+            .取得變數位址(變數名)
+            .載入(&mut self.真言檔, "t0", 變數名)?;
+        writeln!(self.真言檔, "\tsd t0, 0(sp)") // t0 放入棧頂
     }
     // 結束時，棧頂 = t0 = 二元運算結果
-    fn 二元運算(真言檔: &mut File, 運算子: &Ｏ運算子) -> io::Result<()> {
-        writeln!(真言檔, "# {:?}", 運算子)?;
+    fn 二元運算(&mut self, 運算子: &Ｏ運算子) -> io::Result<()> {
+        writeln!(self.真言檔, "# {:?}", 運算子)?;
 
-        writeln!(真言檔, "\tld t1, 0(sp)")?; // t1 = 棧頂
-        writeln!(真言檔, "\taddi sp, sp, 8")?; // 縮小棧
-        writeln!(真言檔, "\tld t0, 0(sp)")?; // t0 = 棧頂
+        writeln!(self.真言檔, "\tld t1, 0(sp)")?; // t1 = 棧頂
+        writeln!(self.真言檔, "\taddi sp, sp, 8")?; // 縮小棧
+        writeln!(self.真言檔, "\tld t0, 0(sp)")?; // t0 = 棧頂
 
         match 運算子 {
             Ｏ運算子::加 => {
-                writeln!(真言檔, "\tadd t0, t0, t1")?;
+                writeln!(self.真言檔, "\tadd t0, t0, t1")?;
             }
             Ｏ運算子::減 => {
-                writeln!(真言檔, "\tsub t0, t0, t1")?;
+                writeln!(self.真言檔, "\tsub t0, t0, t1")?;
             }
             Ｏ運算子::乘 => {
-                writeln!(真言檔, "\tmul t0, t0, t1")?;
+                writeln!(self.真言檔, "\tmul t0, t0, t1")?;
             }
             Ｏ運算子::除 => {
-                writeln!(真言檔, "\tdiv t0, t0, t1")?;
+                writeln!(self.真言檔, "\tdiv t0, t0, t1")?;
             }
             Ｏ運算子::餘 => {
                 // rem 指令是有號整數取餘
                 // 尚有 urem 指令，乃無號整數取餘，但音界咒並不支援
-                writeln!(真言檔, "\trem t0, t0, t1")?;
+                writeln!(self.真言檔, "\trem t0, t0, t1")?;
             }
             Ｏ運算子::等於 => {
-                writeln!(真言檔, "\txor t2, t0, t1")?; // t2 = t0 ^ t1
-                writeln!(真言檔, "\tseqz t0, t2")?; // t0 = (t2 == 0) ? 1 : 0
+                writeln!(self.真言檔, "\txor t2, t0, t1")?; // t2 = t0 ^ t1
+                writeln!(self.真言檔, "\tseqz t0, t2")?; // t0 = (t2 == 0) ? 1 : 0
             }
             Ｏ運算子::異於 => {
-                writeln!(真言檔, "\txor t2, t0, t1")?; // t2 = t0 ^ t1
-                writeln!(真言檔, "\tsnez t0, t2")?; // t0 = (t2 != 0) ? 1 : 0
+                writeln!(self.真言檔, "\txor t2, t0, t1")?; // t2 = t0 ^ t1
+                writeln!(self.真言檔, "\tsnez t0, t2")?; // t0 = (t2 != 0) ? 1 : 0
             }
             // 以下比較運算僅 slt 為精五真言
             Ｏ運算子::小於 => {
-                writeln!(真言檔, "\tslt t0, t0, t1")?; // t0 = (t0 < t1)
+                writeln!(self.真言檔, "\tslt t0, t0, t1")?; // t0 = (t0 < t1)
             }
             Ｏ運算子::大於 => {
                 // 組譯為 slt t0, t1, t0
-                writeln!(真言檔, "\tsgt t0, t0, t1")?; // t0 = (t0 > t1)
+                writeln!(self.真言檔, "\tsgt t0, t0, t1")?; // t0 = (t0 > t1)
             }
             Ｏ運算子::小於等於 => {
                 // 甲＜＝乙，即 ！（甲＞乙）
-                writeln!(真言檔, "\tsgt t0, t0, t1")?; // t0 = (t0 > t0)
-                writeln!(真言檔, "\txori t0, t0, 1")?; // t0 = t0 ^ 1
+                writeln!(self.真言檔, "\tsgt t0, t0, t1")?; // t0 = (t0 > t0)
+                writeln!(self.真言檔, "\txori t0, t0, 1")?; // t0 = t0 ^ 1
             }
             Ｏ運算子::大於等於 => {
                 // 甲＞＝乙，即 ！（甲＜乙）
-                writeln!(真言檔, "\tslt t0, t0, t1")?; // t0 = (t0 < t1)
-                writeln!(真言檔, "\txori t0, t0, 1")?; // t0 = t0 ^ 1
+                writeln!(self.真言檔, "\tslt t0, t0, t1")?; // t0 = (t0 < t1)
+                writeln!(self.真言檔, "\txori t0, t0, 1")?; // t0 = t0 ^ 1
             }
         }
 
-        writeln!(真言檔, "\tsd t0, 0(sp)") // t0 放入棧頂
+        writeln!(self.真言檔, "\tsd t0, 0(sp)") // t0 放入棧頂
     }
     // 結束時，棧頂 = t0 = 術的歸值
-    fn 施術(真言檔: &mut File, 術: &Ｏ施術, 符號表: &Ｏ符號表) -> io::Result<()> {
-        writeln!(真言檔, "# 施展「{}」", 術.術名)?;
+    fn 施術(&mut self, 術: &Ｏ施術, 符號表: &Ｏ符號表) -> io::Result<()> {
+        writeln!(self.真言檔, "# 施展「{}」", 術.術名)?;
 
         assert!(術.實參.len() <= 8, "音界咒暫不支援超過八個術參");
 
@@ -361,33 +363,37 @@ impl Ｏ真言生成器 {
         // NOTE: 不可將計算結果直接賦值給暫存器
         // 因其下個參數的計算過程中，可能又會汙染掉參數暫存器
         for 參數 in &術.實參 {
-            Self::計算(真言檔, 參數, 符號表)?;
+            self.計算(參數, 符號表)?;
         }
         // 將參數從棧中逐一載入參數暫存器
         for 編號 in (0..術.實參.len()).rev() {
-            writeln!(真言檔, "\tld a{}, 0(sp)", 編號)?;
-            writeln!(真言檔, "\taddi sp, sp, 8")?; // 將參數計算結果彈出
+            writeln!(self.真言檔, "\tld a{}, 0(sp)", 編號)?;
+            writeln!(self.真言檔, "\taddi sp, sp, 8")?; // 將參數計算結果彈出
         }
 
-        writeln!(真言檔, "\tcall {}", 術.術名)?;
+        writeln!(self.真言檔, "\tcall {}", 術.術名)?;
 
         // 歸值放回 t0
-        writeln!(真言檔, "\tmv t0, a0")?;
-        writeln!(真言檔, "\taddi sp, sp, -8")?; // 增加棧 64 位元的空間
-        writeln!(真言檔, "\tsd t0, 0(sp)") // t0 放入棧頂
+        writeln!(self.真言檔, "\tmv t0, a0")?;
+        writeln!(self.真言檔, "\taddi sp, sp, -8")?; // 增加棧 64 位元的空間
+        writeln!(self.真言檔, "\tsd t0, 0(sp)") // t0 放入棧頂
     }
-    fn 歸(真言檔: &mut File, 算式: &Ｏ算式, 符號表: &Ｏ符號表) -> io::Result<()> {
-        writeln!(真言檔, "# 歸")?;
-        Self::計算(真言檔, 算式, 符號表)?;
-        writeln!(真言檔, "\taddi sp, sp, 8")?; // 將計算結果彈出
-        writeln!(真言檔, "\tmv a0, t0")?; // 計算結果放進 a0 ，結束術
-        Self::術收尾(真言檔)
+    fn 歸(&mut self, 算式: &Ｏ算式, 符號表: &Ｏ符號表) -> io::Result<()> {
+        writeln!(self.真言檔, "# 歸")?;
+        self.計算(算式, 符號表)?;
+        writeln!(self.真言檔, "\taddi sp, sp, 8")?; // 將計算結果彈出
+        writeln!(self.真言檔, "\tmv a0, t0")?; // 計算結果放進 a0 ，結束術
+        self.術收尾()
     }
-    fn 術收尾(真言檔: &mut File) -> io::Result<()> {
-        writeln!(真言檔, "# 收尾")?;
-        writeln!(真言檔, "\tld ra, -8(s0)")?; // 計算結果放進 a0 ，結束術
-        writeln!(真言檔, "\tmv sp, s0")?; // 歸還棧空間
-        writeln!(真言檔, "\tld s0, -16(s0)")?; // 恢復 fp
-        writeln!(真言檔, "\tret")
+    // fn 生成若(&mut self, 若: &Ｏ若, 符號表: &Ｏ符號表) -> io::Result<()> {
+    //     self.計算(&若.條件, 符號表)?;
+
+    // }
+    fn 術收尾(&mut self) -> io::Result<()> {
+        writeln!(self.真言檔, "# 收尾")?;
+        writeln!(self.真言檔, "\tld ra, -8(s0)")?; // 計算結果放進 a0 ，結束術
+        writeln!(self.真言檔, "\tmv sp, s0")?; // 歸還棧空間
+        writeln!(self.真言檔, "\tld s0, -16(s0)")?; // 恢復 fp
+        writeln!(self.真言檔, "\tret")
     }
 }
