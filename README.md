@@ -42,8 +42,8 @@
 
 需先安裝
 
--riscv64 交叉編譯工具鏈，用於組譯即鏈結外術。
--`qemu-riscv64` 虛擬執行環境。
+- riscv64 交叉編譯工具鏈，用於組譯即鏈結外術。
+- `qemu-riscv64` 虛擬執行環境。
 
 ```
 git clone https://github.com/MROS/yinjie-lang 音界咒
