@@ -4,7 +4,7 @@ pre-build:
 
 build target:
 	cargo run {{target}} # 加入 -O2 啟用優化
-	riscv64-unknown-elf-gcc -g {{target}}.S 外術/曰.o
+	riscv64-linux-gnu-gcc -static -g {{target}}.S 外術/曰.o
 
 run target: (build target)
 	qemu-riscv64 a.out

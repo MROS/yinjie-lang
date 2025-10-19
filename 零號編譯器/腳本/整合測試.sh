@@ -23,7 +23,7 @@ function integration_test() {
     echo ">>> 測試範例: $filename"
 
     cargo run "$case" 1> /tmp/null 2> /dev/null
-    riscv64-unknown-elf-gcc "${case}.S" 外術/曰.o -o /tmp/音界咒執行檔
+    riscv64-linux-gnu-gcc -static "${case}.S" 外術/曰.o -o /tmp/音界咒執行檔
 
     # qemu 可能不會直接輸出到 stdout
     # 使用 script 創建偽終端以捕捉 qemu 的輸出
