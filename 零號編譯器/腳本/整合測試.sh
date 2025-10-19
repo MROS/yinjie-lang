@@ -24,7 +24,10 @@ function integration_test() {
 
     cargo run "$case" 1> /tmp/null 2> /dev/null
     riscv64-unknown-elf-gcc "${case}.S" 外術/曰.o -o /tmp/音界咒執行檔
-    qemu-riscv64 /tmp/音界咒執行檔 > /tmp/答案
+
+    # qemu 可能不會直接輸出到 stdout
+    # 使用 script 創建偽終端以捕捉 qemu 的輸出
+    script -q -c "qemu-riscv64 /tmp/音界咒執行檔" > /tmp/答案
 
     expected="範例/${filename%.音界}.解"
     # NOTE: diff -w 忽略空白、換行差異，可能導致潛在錯誤
