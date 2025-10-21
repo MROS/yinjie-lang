@@ -1,3 +1,6 @@
+emulator-run := if os() == "linux" { "qemu-riscv64" } else { "rvlinux" }
+emulator-debug := if os() == "linux" { "qemu-riscv64 -g 2159" } else { "rvlinux --gdb" }
+
 # 編譯外術
 pre-build:
 	just 外術/build
@@ -7,10 +10,10 @@ build target:
 	riscv64-linux-gnu-gcc -static -g {{target}}.S 外術/曰.o
 
 run target: (build target)
-	qemu-riscv64 a.out
+	{{emulator-run}} a.out
 
 debug target: (build target)
-	qemu-riscv64 -g 1234 a.out # 在 1234 埠口啟動 gdb 伺服器
+	{{emulator-debug}} a.out # 在 2159 埠口啟動 gdb 伺服器
 
 test:
     ./腳本/整合測試.sh

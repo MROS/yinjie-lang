@@ -12,6 +12,15 @@ function red_print() {
   echo -e "${red}$1${reset}"
 }
 
+if command -v qemu-riscv64 >/dev/null 2>&1; then
+    EMULATOR_RUN="qemu-riscv64"
+elif command -v rvlinux >/dev/null 2>&1; then
+    EMULATOR_RUN="rvlinux -s"
+else
+    echo "找不到 qemu-riscv64 或 rvlinux ，請擇一安裝以模擬 RISC-V 64bit linux 系統" >&2
+    exit 1
+fi
+
 function integration_test() {
   rm 範例/*.S
   cases=($(find "範例" -type f -name "*.音界"))
@@ -27,7 +36,7 @@ function integration_test() {
 
     # qemu 可能不會直接輸出到 stdout
     # 使用 script 創建偽終端以捕捉 qemu 的輸出
-    script -q -c "qemu-riscv64 /tmp/音界咒執行檔" > /tmp/答案
+    script -q -c "${EMULATOR_RUN} /tmp/音界咒執行檔" > /tmp/答案
 
     expected="範例/${filename%.音界}.解"
     # NOTE: diff -w 忽略空白、換行差異，可能導致潛在錯誤
