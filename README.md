@@ -45,7 +45,7 @@
 - [rust 工具鏈](https://rust-lang.org/zh-TW/tools/install)
 - [just](https://github.com/casey/just)
 - riscv64 交叉編譯工具鏈 `riscv64-linux-gnu-gcc` ，用於組譯及鏈結外術。
-    - `sudo apt install riscv64-linux-gnu-gcc`
+    - `sudo apt install gcc-riscv64-linux-gnu`
 - `qemu-riscv64` 虛擬用戶態執行環境。
     - `sudo apt install qemu-user`
 
@@ -75,4 +75,3 @@ just test
 ## 編譯目標
 
 僅支援 qemu-riscv64 ，於 linux 環境下執行。
-
