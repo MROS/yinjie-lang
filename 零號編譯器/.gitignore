@@ -3,3 +3,10 @@
 a.out
 
 typescript
+
+# 編輯器
+.idea/
+*.swo
+*.swp
+.vscode/
+

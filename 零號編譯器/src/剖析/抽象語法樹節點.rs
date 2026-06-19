@@ -17,13 +17,23 @@ pub enum Ｏ頂層宣告 {
 #[derive(Debug, PartialEq, From)]
 pub enum Ｏ句 {
     變數宣告(Ｏ變數宣告),
+    賦值(Ｏ賦值),
     算式(Ｏ算式),
     歸(Ｏ歸),
     若(Ｏ若),
+    環(Ｏ環),
+    破(Ｏ破),
+    續(Ｏ續),
 }
 
 #[derive(Debug, PartialEq)]
 pub struct Ｏ變數宣告 {
+    pub 變數名: String,
+    pub 算式: Ｏ算式,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct Ｏ賦值 {
     pub 變數名: String,
     pub 算式: Ｏ算式,
 }
@@ -57,6 +67,17 @@ pub struct Ｏ或若 {
 pub struct Ｏ不然 {
     pub 區塊: Vec<Ｏ句>,
 }
+
+#[derive(Debug, PartialEq)]
+pub struct Ｏ環 {
+    pub 區塊: Vec<Ｏ句>,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct Ｏ破{}
+
+#[derive(Debug, PartialEq)]
+pub struct Ｏ續{}
 
 #[derive(Debug, PartialEq)]
 pub struct Ｏ術宣告 {
